@@ -1,14 +1,8 @@
 import express from "express";
-import { createClass, allClasses } from "../controllers/classController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { allEnrollments, enrollStudents } from "../controllers/enrollController.js";
 import { allStudents, allTeachers } from "../controllers/adminControllers.js";
-const classesRouter = express.Router();
-classesRouter.post("/create", authMiddleware, createClass);
-classesRouter.get("/allClasses", authMiddleware, allClasses);
-classesRouter.post("/enroll-students", authMiddleware, enrollStudents);
-classesRouter.get("/all-enrollments", authMiddleware, allEnrollments);
-classesRouter.get("/all-students", authMiddleware, allStudents);
-classesRouter.get("/all-teachers", authMiddleware, allTeachers);
-export default classesRouter;
+const adminRouter = express.Router();
+adminRouter.get("/all-students", authMiddleware, allStudents);
+adminRouter.get("/all-teachers", authMiddleware, allTeachers);
+export default adminRouter;
 //# sourceMappingURL=admin.js.map

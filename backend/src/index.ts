@@ -5,6 +5,7 @@ import cors from "cors";
 import authRouter from "./routes/auth.js";
 import classesRouter from "./routes/class.js";
 import adminRouter from "./routes/admin.js";
+import teacherRouter from "./routes/teacher.js";
 
 const app = express();
 app.use(cors());
@@ -19,6 +20,7 @@ app.get("/test", (req: Request, res: Response) => {
 app.use("/auth", authRouter);
 app.use("/classes", classesRouter);
 app.use("/admin", adminRouter);
+app.use("/teacher", teacherRouter);
 
 
 app.listen(PORT, () => {
