@@ -121,3 +121,59 @@ export const closeAttendance = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+export const attendance = async (req: Request, res: Response) => {
+    try {
+        if (req.role !== "TEACHER") {
+            return res.status(403).json({ message: "Only teachers can get attendance" });
+        }
+
+        const { classId } = req.body;
+       
+
+        const class_ = await prisma.class.findUnique({ where: { id: classId } });
+        if (!class_) return res.status(404).json({ message: "Class not found" });
+
+        if (class_.teacherId !== req.userId) {
+            return res.status(403).json({ message: "You are not authorized to get attendance" });
+        }
+
+        const enrolledStudents = await prisma.enrollment.findMany({
+            where: { classId },
+            select: {
+                student: {
+                    select: {
+                        userId: true,
+                        name: true
+                    }
+                }
+            }
+        });
+
+        const attendanceRecords = await prisma.attendance.findMany({
+            where: {
+                classId,
+            },
+            select: {
+                studentId: true,
+                status: true
+            }
+        });
+
+        const attendanceList = enrolledStudents.map((enr) => {
+            const record = attendanceRecords.find(
+                (a) => a.studentId === enr.student.userId
+            );
+            return {
+                userId: enr.student.userId,
+                name: enr.student.name,
+                status: record ? record.status : "ABSENT" 
+            };
+        });
+
+        return res.json(attendanceList);
+    } catch (err) {
+        console.error("Get attendance error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+};

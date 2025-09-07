@@ -67,5 +67,5 @@ model Attendance {
   class     Class    @relation(fields: [classId], references: [id])
   student   User     @relation(fields: [studentId], references: [userId])
 
-  @@unique([classId, studentId, date]) 
+  @@unique([classId, studentId]) 
 }
