@@ -1,11 +1,12 @@
 import express from "express";
-import { createClass, allClasses } from "../controllers/classController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { allStudents, allTeachers } from "../controllers/adminControllers.js";
 
-const classesRouter = express.Router();
+const adminRouter = express.Router();
 
-classesRouter.post("/create", authMiddleware, createClass);
-classesRouter.get("/allClasses", authMiddleware, allClasses);
-// classesRouter.post("/delete-device", authMiddleware ,logout);
 
-export default classesRouter;
+adminRouter.get("/all-students", authMiddleware, allStudents);
+adminRouter.get("/all-teachers", authMiddleware, allTeachers);
+
+
+export default adminRouter;

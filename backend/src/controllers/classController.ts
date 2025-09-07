@@ -1,11 +1,6 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
 import { type Request, type Response } from "express";
-import z, { includes } from "zod";
+import z from "zod";
 import { prisma } from "../prisma.js";
-
-const jwtSecret = process.env.JWT_SECRET as string;
 
 export const createClass = async (req: Request, res: Response) => {
     if (req.role != "ADMIN") {
@@ -61,8 +56,9 @@ export const allClasses = async (req: Request, res: Response) => {
     }
     try {
         const classes = await prisma.class.findMany({
-            include: { teacher: true }
+            include: { teacher: true, enrollments : true }
         });
+        
         res.json(classes);
     } catch (err) {
         console.error("Get classes error:", err);
