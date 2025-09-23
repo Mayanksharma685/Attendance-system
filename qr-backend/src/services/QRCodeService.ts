@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import crypto from "crypto";
-import { redis } from "../config/redisClient";
+import { redisClient } from "../config/redisClient";
+
 
 interface QRSession {
   eventId: string;
@@ -24,11 +25,11 @@ interface VerifyQRResponse {
 export async function generateQRCode(): Promise<GenerateQRResponse> {
   try {
     // Delete any previous active QR session
-    const current = await redis.get("qr:current");
+    const current = await redisClient.get("qr:current");
     if (current) {
       const { sessionId } = JSON.parse(current) as { sessionId: string };
-      await redis.del(`qr:session:${sessionId}`);
-      await redis.del("qr:current");
+      await redisClient.del(`qr:session:${sessionId}`);
+      await redisClient.del("qr:current");
     }
 
     // Create a new QR session
@@ -37,10 +38,10 @@ export async function generateQRCode(): Promise<GenerateQRResponse> {
 
     // Store session in Redis (30s expiry)
     const sessionData: QRSession = { eventId: "attend2025", createdAt };
-    await redis.set(`qr:session:${sessionId}`, JSON.stringify(sessionData), { EX: 30 });
+    await redisClient.set(`qr:session:${sessionId}`, JSON.stringify(sessionData), { EX: 30 });
 
     // Mark as the current QR
-    await redis.set("qr:current", JSON.stringify({ sessionId, createdAt }), { EX: 30 });
+    await redisClient.set("qr:current", JSON.stringify({ sessionId, createdAt }), { EX: 30 });
 
     // Generate QR Code image
     const qrImage = await QRCode.toDataURL(JSON.stringify({ sessionId }));
@@ -54,7 +55,7 @@ export async function generateQRCode(): Promise<GenerateQRResponse> {
 
 export async function verifyQRCode(sessionId: string): Promise<VerifyQRResponse> {
   try {
-    const current = await redis.get("qr:current");
+    const current = await redisClient.get("qr:current");
     if (!current) {
       return { success: false, error: "No active QR" };
     }

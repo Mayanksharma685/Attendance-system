@@ -1,18 +1,21 @@
-import { createClient } from "redis";
-import type { RedisClientType } from "redis";
+import { createClient, type RedisClientType } from "redis";
+import dotenv from "dotenv";
 
+dotenv.config();
 
-export let redis: RedisClientType;
+let redisClient: RedisClientType;
 
-export async function connectRedis(): Promise<void> {
-  redis = createClient({
-    url: process.env.REDIS_URL || "redis://localhost:6379",
+export const connectRedis = async (): Promise<void> => {
+  const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+
+  redisClient = createClient({ url: redisUrl });
+
+  redisClient.on("error", (err: Error) => {
+    console.error("Redis Client Error:", err);
   });
 
-  redis.on("error", (err: Error) => {
-    console.error("Redis Client Error", err);
-  });
+  await redisClient.connect();
+  console.log(`Connected to Redis at ${redisUrl}`);
+};
 
-  await redis.connect();
-  console.log("Connected to Redis");
-}
+export { redisClient };

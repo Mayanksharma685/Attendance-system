@@ -1,12 +1,15 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import qrRoutes from "./routes/qrRoutes";
 import { connectRedis } from "./config/redisClient";
+
+dotenv.config();
 
 const app = express();
 
 app.use(express.json());
-app.use(cors({ origin: ["http://localhost:5173"] }));
+app.use(cors({ origin: [process.env.CLIENT_URL || "http://localhost:5173"] }));
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("Backend is working");
@@ -14,12 +17,22 @@ app.get("/", (_req: Request, res: Response) => {
 
 app.use("/api/qr", qrRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 connectRedis()
   .then(() => {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
+    });
+
+    // Handle "port in use" error
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`Port ${PORT} is already in use. Please stop the other process.`);
+        process.exit(1);
+      } else {
+        console.error("Server error:", err);
+      }
     });
   })
   .catch((err: Error) => {
