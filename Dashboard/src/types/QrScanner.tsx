@@ -1,45 +1,22 @@
-// export interface QrScannerProps {
-//     onDecode?: (result: string | null) => void;
-//     onError?: (error: Error) => void;
-//     constraints?: MediaStreamConstraints;
-//   }
-
-// //  declare const QrScanner: React.FC<QrScannerProps>;
-// //  export default QrScanner;
-
-
-//  import React from 'react'
- 
-//  const QrScanner = ({onDecode, onError}: QrScannerProps) => {
-//    return (
-//      <div>
-//        This is a QR Scanner
-//      </div>
-//    )
-//  }
- 
-//  export default QrScanner
- 
-
+// src/types/QrScanner.tsx
 import React, { useEffect, useRef, useState } from "react";
+import jsQR from "jsqr";
 
 export interface QrScannerProps {
   onDecode?: (result: string | null) => void;
   onError?: (error: Error) => void;
-  onCancel?: () => void; // Added to notify parent when scanner is closed
   constraints?: MediaStreamConstraints;
 }
 
 const QrScanner: React.FC<QrScannerProps> = ({
   onDecode,
   onError,
-  onCancel,
   constraints,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  // Start the camera
   useEffect(() => {
     const startCamera = async () => {
       try {
@@ -51,6 +28,7 @@ const QrScanner: React.FC<QrScannerProps> = ({
           videoRef.current.srcObject = mediaStream;
           await videoRef.current.play();
         }
+        scanLoop(); // start scanning loop
       } catch (err) {
         console.error("Camera access error:", err);
         onError?.(err as Error);
@@ -62,9 +40,9 @@ const QrScanner: React.FC<QrScannerProps> = ({
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stop camera
   const stopCamera = () => {
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
@@ -72,23 +50,36 @@ const QrScanner: React.FC<QrScannerProps> = ({
     setStream(null);
   };
 
+  const scanLoop = () => {
+    const interval = setInterval(() => {
+      if (!videoRef.current || !canvasRef.current) return;
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code) {
+        onDecode?.(code.data);
+      }
+    }, 300); // scan every 300ms
+
+    return () => clearInterval(interval);
+  };
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">
-      {/* Camera feed */}
-      <video
-        ref={videoRef}
-        className="w-full max-w-md rounded-lg border"
-      />
+      {/* Video feed */}
+      <video ref={videoRef} className="w-full max-w-md rounded-lg border" />
 
-      {/* Cancel button
-      <button
-        onClick={() => {
-          stopCamera();
-          onCancel?.();
-        }}
-        className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-      >
-      </button> */}
+      {/* Hidden canvas for scanning */}
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };
