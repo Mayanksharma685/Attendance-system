@@ -63,7 +63,7 @@ export default function Timetable() {
       );
 
       setAttendance((prev) => ({ ...prev, [parsed.subjectCode]: true }));
-      setMessage(res?.message || "✅ Attendance marked successfully!");
+      setMessage(res?.message || "Attendance marked successfully!");
 
       // Auto-close scanner only on success
       setTimeout(() => {
