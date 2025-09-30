@@ -1,13 +1,10 @@
+// src/components/Layout.tsx
 import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import TeacherDashboard from "../views/teacher/TeacherDashboard";
-import StudentDashboard from "../views/student/StudentDashboard";
 
 export default function Layout() {
   const loc = useLocation();
-
-  // ✅ Detect current role from the URL
   const isTeacher = loc.pathname.startsWith("/teacher");
   const isStudent = loc.pathname.startsWith("/student");
 
@@ -27,7 +24,7 @@ export default function Layout() {
             <h1 className="text-lg font-semibold">Bennett University Dashboard</h1>
           </div>
 
-          {/* ✅ Role Display (Not Links Anymore) */}
+          {/* Role Display */}
           <div className="flex items-center gap-4">
             {isTeacher && (
               <span className="px-3 py-1 rounded bg-gray-800 text-white">
@@ -42,12 +39,9 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Routes */}
+        {/*Render child routes here */}
         <main className="flex-1 p-6 overflow-y-auto">
-          <Routes>
-            <Route path="/teacher/*" element={<TeacherDashboard />} />
-            <Route path="/student/*" element={<StudentDashboard />} />
-          </Routes>
+          <Outlet />
         </main>
       </div>
     </div>

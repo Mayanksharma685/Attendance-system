@@ -4,10 +4,10 @@ import { teacherApi } from "../../api/teacherApi";
 
 interface QrSession {
   sessionId: string;
-  qrImage: string;
+  qrData: string;
   subjectCode: string;
-  startedAt: string;
-  prevImage?: string; // for seamless fade transition
+  expiresAt: string;
+  prevData?: string;
 }
 
 interface Subject {
@@ -21,8 +21,9 @@ export default function TeacherDashboard() {
   const [selected, setSelected] = useState("");
   const [qrSession, setQrSession] = useState<QrSession | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [fade, setFade] = useState(true);
 
-  // 🔹 Load subjects (fallback if backend missing)
+  // 🔹 Load subjects
   useEffect(() => {
     async function loadSubjects() {
       try {
@@ -36,11 +37,11 @@ export default function TeacherDashboard() {
           setSubjects(normalized);
           return;
         }
-      } catch (err) {
-        console.error("Error loading subjects:", err);
+      } catch {
+        /* ignore */
       }
 
-      // fallback subjects
+      // fallback
       setSubjects([
         { code: "CSET301", title: "Artificial Intelligence", description: "Basics of AI" },
         { code: "CSET326", title: "Soft Computing", description: "Neural Networks and Fuzzy Logic" },
@@ -53,38 +54,34 @@ export default function TeacherDashboard() {
     loadSubjects();
   }, []);
 
-  // 🔹 Start QR
+  // 🔹 Start session
   const handleStartQr = async () => {
     if (!selected) return alert("Please select a subject first");
     try {
-      const data = await teacherApi.generateQr(selected);
-      setQrSession({
-        ...data,
-        subjectCode: selected,
-        startedAt: new Date().toISOString(),
-      });
+      const data = await teacherApi.startSession(selected);
+      setQrSession({ ...data, subjectCode: selected, prevData: "" });
       setTimeLeft(30);
-    } catch (err) {
-      console.error("Failed to start QR:", err);
+    } catch {
+      /* ignore */
     }
   };
 
-  // 🔹 End QR
+  // 🔹 Stop session
   const handleEndQr = async () => {
+    if (!qrSession) return;
     try {
-      await teacherApi.endQr?.();
-    } catch (err) {
-      console.error("Failed to end QR:", err);
+      await teacherApi.stopSession(qrSession.sessionId);
+    } catch {
+      /* ignore */
     } finally {
       setQrSession(null);
       setTimeLeft(0);
     }
   };
 
-  // 🔹 Countdown timer
+  // 🔹 Countdown
   useEffect(() => {
     if (!qrSession) return;
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -94,44 +91,45 @@ export default function TeacherDashboard() {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [qrSession]);
 
-  // 🔹 Refresh QR every 5s (cross-fade, no pause)
+  // 🔹 Auto-refresh QR every 5s (smooth fade + scale)
   useEffect(() => {
     if (!qrSession) return;
 
     const interval = setInterval(async () => {
       try {
-        const data = await teacherApi.generateQr(selected);
-        const newQr = {
-          ...data,
-          subjectCode: selected,
-          startedAt: new Date().toISOString(),
-        };
-
-        setQrSession((prev) =>
-          prev ? { ...newQr, prevImage: prev.qrImage } : newQr
-        );
-      } catch (err) {
-        console.error("Failed to refresh QR:", err);
+        setFade(false); // fade-out + shrink
+        setTimeout(async () => {
+          const data = await teacherApi.getActiveSession();
+          if (data?.qrData) {
+            setQrSession((prev) =>
+              prev
+                ? { ...data, subjectCode: prev.subjectCode, prevData: prev.qrData }
+                : data
+            );
+          }
+          setFade(true); // fade-in + grow
+        }, 300);
+      } catch {
+        /* ignore */
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [qrSession, selected]);
+  }, [qrSession]);
 
-  // 🔹 Progress circle size
+  // 🔹 Progress circle
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const progress = ((30 - timeLeft) / 30) * circumference;
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
+      <h1 className="text-2xl font-bold">📚 Teacher Dashboard</h1>
 
-      {/* Subject Selector + Start Button */}
+      {/* Subject Selector */}
       <div className="flex gap-3 items-center">
         <select
           value={selected}
@@ -156,11 +154,11 @@ export default function TeacherDashboard() {
         )}
       </div>
 
-      {/* Fullscreen QR Overlay */}
+      {/* Fullscreen QR */}
       {qrSession && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-md z-50">
           <div className="relative bg-white p-6 rounded-2xl shadow-lg text-center">
-            {/* Close button */}
+            {/* Close */}
             <button
               onClick={handleEndQr}
               className="absolute top-2 right-2 text-gray-600 hover:text-red-600 text-xl"
@@ -168,30 +166,34 @@ export default function TeacherDashboard() {
               ✖
             </button>
 
-            {/* Subject Code + Name */}
+            {/* Subject */}
             <h2 className="text-lg font-semibold mb-3">
               {qrSession.subjectCode} –{" "}
               {subjects.find((s) => s.code === qrSession.subjectCode)?.title ||
                 "Unknown Subject"}
             </h2>
 
-            {/* QR Cross-Fade */}
+            {/* QR with fade + scale */}
             <div className="relative w-80 h-80 mx-auto">
-              {qrSession.prevImage && (
+              {qrSession.prevData && (
                 <img
-                  src={qrSession.prevImage}
+                  src={qrSession.prevData}
                   alt="Old QR"
-                  className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-500"
+                  className={`absolute inset-0 w-full h-full object-contain transition-all duration-300 ${
+                    fade ? "opacity-0 scale-95" : "opacity-100 scale-100"
+                  }`}
                 />
               )}
               <img
-                src={qrSession.qrImage}
+                src={qrSession.qrData}
                 alt="QR Code"
-                className="absolute inset-0 w-full h-full object-contain opacity-100 transition-opacity duration-500"
+                className={`absolute inset-0 w-full h-full object-contain transition-all duration-300 ${
+                  fade ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                }`}
               />
             </div>
 
-            {/* Countdown Circle */}
+            {/* Timer */}
             <div className="relative flex justify-center items-center mt-6">
               <svg className="w-24 h-24 transform -rotate-90">
                 <circle

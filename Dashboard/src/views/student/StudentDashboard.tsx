@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { studentApi } from "../../api/studentApi";
-import { StudentProfile } from "../../models/Student";
+import { Outlet } from "react-router-dom"; // for nested routes
 
 const StudentDashboard: React.FC = () => {
   const [profile, setProfile] = useState<any | null>(null);
@@ -18,7 +18,7 @@ const StudentDashboard: React.FC = () => {
       } catch (err) {
         console.error(err);
 
-        //  fallback mock data (merged fields)
+        // fallback mock data
         setProfile({
           name: "MAYANK SHARMA",
           status: "Active",
@@ -39,7 +39,6 @@ const StudentDashboard: React.FC = () => {
           discountCategory: "N/A",
           intake: "2023",
           validity: "2027",
-
           firstName: "MAYANK",
           lastName: "SHARMA",
           dob: "10-09-2005",
@@ -47,8 +46,7 @@ const StudentDashboard: React.FC = () => {
           gender: "Male",
           fatherName: "Pushpendra Sharma",
           motherName: "Pooja Sharma",
-          address:
-            "House No. 10, Pratap Vihar",
+          address: "House No. 10, Pratap Vihar",
           city: "Aligarh",
           state: "Uttar Pradesh-202150",
           contact: "8214345620",
@@ -78,8 +76,9 @@ const StudentDashboard: React.FC = () => {
         Student Dashboard
       </h1>
 
+      {/* 👇 Student Profile Section (always visible) */}
       {profile && (
-        <section className="bg-white shadow-md rounded-lg p-6">
+        <section className="bg-white shadow-md rounded-lg p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Left Column → Image + Basic Info */}
             <div className="flex flex-col items-center md:items-start">
@@ -105,7 +104,6 @@ const StudentDashboard: React.FC = () => {
 
             {/* Right Column → Academic + Personal Info */}
             <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-              {/* Academic Info */}
               <div>
                 <h3 className="text-sm font-medium text-gray-500 uppercase">
                   College
@@ -172,8 +170,6 @@ const StudentDashboard: React.FC = () => {
                 </h3>
                 <p>{profile.validity}</p>
               </div>
-
-              {/* Personal Info */}
               <div>
                 <h3 className="text-sm font-medium text-gray-500 uppercase">
                   Father's Name
@@ -228,8 +224,14 @@ const StudentDashboard: React.FC = () => {
           </div>
         </section>
       )}
+
+      {/*  Nested route outlet */}
+      <Outlet />
     </div>
   );
 };
 
 export default StudentDashboard;
+
+
+

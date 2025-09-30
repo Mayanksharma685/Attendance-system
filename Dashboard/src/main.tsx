@@ -1,13 +1,13 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
+import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import Layout from "./components/Layout";
-import "./styles/index.css"; // adjust if your css file is in /src
+import AppRoutes from "./routes/AppRoutes";
+import "./styles/index.css";
 
-createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Layout />
+      <AppRoutes />
     </BrowserRouter>
   </React.StrictMode>
 );

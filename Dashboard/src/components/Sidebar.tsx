@@ -1,9 +1,15 @@
+// src/components/Sidebar.tsx
 import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar() {
   const location = useLocation();
   const isTeacher = location.pathname.startsWith("/teacher");
   const isStudent = location.pathname.startsWith("/student");
+
+  const linkClass = (path: string) =>
+    `block p-3 rounded-lg hover:bg-white/5 ${
+      location.pathname === path ? "bg-white/10 text-blue-300" : ""
+    }`;
 
   return (
     <aside className="w-72 bg-slate-900 text-white min-h-screen p-6 flex flex-col gap-6">
@@ -22,9 +28,30 @@ export default function Sidebar() {
       {isTeacher && (
         <nav className="flex-1">
           <ul className="space-y-2">
-            <li><Link to="/teacher/dashboard" className="block p-3 rounded-lg hover:bg-white/5">Teacher Dashboard</Link></li>
-            <li><Link to="/teacher/profile" className="block p-3 rounded-lg hover:bg-white/5">Profile</Link></li>
-            <li><Link to="/teacher/settings" className="block p-3 rounded-lg hover:bg-white/5">Settings</Link></li>
+            <li>
+              <Link
+                to="/teacher/dashboard"
+                className={linkClass("/teacher/dashboard")}
+              >
+                Teacher Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/teacher/profile"
+                className={linkClass("/teacher/profile")}
+              >
+                Profile
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/teacher/settings"
+                className={linkClass("/teacher/settings")}
+              >
+                Settings
+              </Link>
+            </li>
           </ul>
         </nav>
       )}
@@ -33,15 +60,82 @@ export default function Sidebar() {
       {isStudent && (
         <nav className="flex-1">
           <ul className="space-y-2">
-            <li><Link to="/student/profile" className="block p-3 rounded-lg hover:bg-white/5">Profile</Link></li>
-            <li><Link to="/student/messages" className="block p-3 rounded-lg hover:bg-white/5">Messages</Link></li>
-            <li><Link to="/student/attendance" className="block p-3 rounded-lg hover:bg-white/5">Attendance</Link></li>
-            <li><Link to="/student/timetable" className="block p-3 rounded-lg hover:bg-white/5">Time Table</Link></li>
-            <li><Link to="/student/leave" className="block p-3 rounded-lg hover:bg-white/5">Leave & Gate Outpass</Link></li>
-            <li><Link to="/student/enrollment" className="block p-3 rounded-lg hover:bg-white/5">Enrollment</Link></li>
-            <li><Link to="/student/hallticket" className="block p-3 rounded-lg hover:bg-white/5">Hall Ticket</Link></li>
-            <li><Link to="/student/room-partner" className="block p-3 rounded-lg hover:bg-white/5">Room Partner Selection</Link></li>
-            <li><Link to="/student/result" className="block p-3 rounded-lg hover:bg-white/5">Result</Link></li>
+            {/* ✅ Profile goes to dashboard */}
+            <li>
+              <Link
+                to="/student/dashboard"
+                className={linkClass("/student/dashboard")}
+              >
+                Profile
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/student/messages"
+                className={linkClass("/student/messages")}
+              >
+                Messages
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/student/attendance"
+                className={linkClass("/student/attendance")}
+              >
+                Attendance
+              </Link>
+            </li>
+
+            {/* ✅ Timetable link */}
+            <li>
+              <Link
+                to="/student/timetable"
+                className={linkClass("/student/timetable")}
+              >
+                Time Table
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/student/leave"
+                className={linkClass("/student/leave")}
+              >
+                Leave & Gate Outpass
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/student/enrollment"
+                className={linkClass("/student/enrollment")}
+              >
+                Enrollment
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/student/hallticket"
+                className={linkClass("/student/hallticket")}
+              >
+                Hall Ticket
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/student/room-partner"
+                className={linkClass("/student/room-partner")}
+              >
+                Room Partner Selection
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/student/result"
+                className={linkClass("/student/result")}
+              >
+                Result
+              </Link>
+            </li>
           </ul>
         </nav>
       )}
