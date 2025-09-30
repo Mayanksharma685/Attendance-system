@@ -1,7 +1,7 @@
 // src/views/student/Timetable.tsx
 import React, { useState, useEffect } from "react";
 import { studentApi } from "../../api/studentApi";
-import QrScanner from "../../types/QrScanner"; // adjust import path
+import QrScanner from "../../types/QrScanner";
 
 interface Subject {
   code: string;
@@ -16,12 +16,12 @@ export default function Timetable() {
   const [lastResult, setLastResult] = useState<any>(null);
   const [message, setMessage] = useState<string>("");
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
-  const [scanned, setScanned] = useState(false); // prevent duplicate scans
+  const [scanned, setScanned] = useState(false);
 
   // 🔹 Replace with logged-in studentId (later from auth/store)
   const studentId = "STU123";
 
-  // Load student subjects (static for now, can later fetch from API)
+  // Load student subjects
   useEffect(() => {
     setSubjects([
       { code: "CSET301", title: "Artificial Intelligence", description: "Basics of AI" },
@@ -33,7 +33,7 @@ export default function Timetable() {
     ]);
   }, []);
 
-  // 🔹 Fetch active session once (instead of polling)
+  // Fetch active session
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -46,9 +46,9 @@ export default function Timetable() {
     fetchSession();
   }, []);
 
-  // Handle QR scan result (auto close scanner on success)
-  const handleScan = async (result: string) => {
-    if (scanned) return; // ignore duplicate scans
+  // Handle QR scan result
+  const handleScan = async (result: string | null) => {
+    if (!result || scanned) return;
     setScanned(true);
 
     try {
@@ -65,14 +65,14 @@ export default function Timetable() {
       setAttendance((prev) => ({ ...prev, [parsed.subjectCode]: true }));
       setMessage(res?.message || "Attendance marked successfully!");
 
-      // Auto-close scanner only on success
       setTimeout(() => {
         setScanning(false);
-      }, 1200);
+        setMessage("");
+      }, 1500);
     } catch (err: any) {
       console.error("Attendance submission failed:", err);
-      setMessage(err.response?.data?.error || "❌ Failed to verify QR.");
-      setScanned(false); // allow retry if failed
+      setMessage(err.response?.data?.error || "Failed to verify QR.");
+      setScanned(false); // allow retry
     }
   };
 
@@ -102,7 +102,8 @@ export default function Timetable() {
                 <button
                   onClick={() => {
                     setScanning(true);
-                    setScanned(false); // reset scan state each time scanner opens
+                    setScanned(false);
+                    setMessage("");
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
@@ -124,15 +125,11 @@ export default function Timetable() {
               📷 Scan QR Code for {activeSession?.subjectCode}
             </h2>
 
-            {/* Square scanner box */}
+            {/* Live QR Scanner (handles decoding itself) */}
             <div className="w-[80%] aspect-square border-4 border-blue-600 rounded-xl overflow-hidden flex items-center justify-center">
               <QrScanner
-                onDecode={(result: string | null) => {
-                  if (result && !scanned) handleScan(result);
-                }}
-                onError={(error: Error) => {
-                  console.error("QR Scan Error:", error);
-                }}
+                onDecode={(result) => handleScan(result)}
+                onError={(error) => console.error("QR Scan Error:", error)}
               />
             </div>
 
@@ -151,7 +148,7 @@ export default function Timetable() {
               </p>
             )}
 
-            {/* Cancel button only */}
+            {/* Cancel button */}
             <div className="mt-6">
               <button
                 onClick={() => setScanning(false)}
