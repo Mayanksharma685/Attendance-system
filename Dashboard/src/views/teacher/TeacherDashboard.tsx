@@ -23,7 +23,7 @@ export default function TeacherDashboard() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [fade, setFade] = useState(true);
 
-  // 🔹 Load subjects
+  // Load subjects
   useEffect(() => {
     async function loadSubjects() {
       try {
@@ -37,11 +37,8 @@ export default function TeacherDashboard() {
           setSubjects(normalized);
           return;
         }
-      } catch {
-        /* ignore */
-      }
-
-      // fallback
+      } catch {}
+      // fallback subjects
       setSubjects([
         { code: "CSET301", title: "Artificial Intelligence", description: "Basics of AI" },
         { code: "CSET326", title: "Soft Computing", description: "Neural Networks and Fuzzy Logic" },
@@ -54,32 +51,28 @@ export default function TeacherDashboard() {
     loadSubjects();
   }, []);
 
-  // 🔹 Start session
+  // Start session
   const handleStartQr = async () => {
     if (!selected) return alert("Please select a subject first");
     try {
       const data = await teacherApi.startSession(selected);
       setQrSession({ ...data, subjectCode: selected, prevData: "" });
       setTimeLeft(30);
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   };
 
-  // 🔹 Stop session
+  // Stop session
   const handleEndQr = async () => {
     if (!qrSession) return;
     try {
       await teacherApi.stopSession(qrSession.sessionId);
-    } catch {
-      /* ignore */
-    } finally {
+    } catch {} finally {
       setQrSession(null);
       setTimeLeft(0);
     }
   };
 
-  // 🔹 Countdown
+  // Countdown timer
   useEffect(() => {
     if (!qrSession) return;
     const timer = setInterval(() => {
@@ -94,33 +87,32 @@ export default function TeacherDashboard() {
     return () => clearInterval(timer);
   }, [qrSession]);
 
-  // 🔹 Auto-refresh QR every 5s (smooth fade + scale)
+  // 🔹 Shuffle QR every 10 seconds with fade animation
   useEffect(() => {
     if (!qrSession) return;
 
     const interval = setInterval(async () => {
       try {
-        setFade(false); // fade-out + shrink
+        setFade(false); // fade out old QR
+
         setTimeout(async () => {
           const data = await teacherApi.getActiveSession();
-          if (data?.qrData) {
+          if (data?.qrData && data.sessionId === qrSession.sessionId) {
             setQrSession((prev) =>
               prev
-                ? { ...data, subjectCode: prev.subjectCode, prevData: prev.qrData }
+                ? { ...prev, prevData: prev.qrData, qrData: data.qrData }
                 : data
             );
+            setFade(true); // fade in new QR
           }
-          setFade(true); // fade-in + grow
-        }, 300);
-      } catch {
-        /* ignore */
-      }
-    }, 5000);
+        }, 300); // fade-out duration
+      } catch {}
+    }, 5000); // shuffle every 5 seconds
 
     return () => clearInterval(interval);
   }, [qrSession]);
 
-  // 🔹 Progress circle
+  // Progress circle
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const progress = ((30 - timeLeft) / 30) * circumference;
