@@ -74,10 +74,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 process.on("unhandledRejection", (reason: unknown) => {
   console.error("Unhandled Rejection:", reason);
 });
-
-/* -------------------------------
-   Additional Optional Enhancements
---------------------------------- */
 // You could add ping/pong for WebSocket keep-alive or log connections:
 process.on("SIGINT", () => {
   console.log("Server shutting down...");
