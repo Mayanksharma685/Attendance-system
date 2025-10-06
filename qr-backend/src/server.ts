@@ -3,12 +3,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import qrRoutes from "./routes/qrRoutes";
 import { connectRedis } from "./config/redisClient";
+import { WebSocketServer } from "ws";
+import { QRCodeService } from "./services/QRCodeService";
+import { initQrService } from "./controllers/qrController";
 
 dotenv.config();
 
 const app = express();
 
-//  Middleware
+// Middleware
 app.use(express.json());
 app.use(
   cors({
@@ -17,29 +20,37 @@ app.use(
   })
 );
 
-// Health check route
+// Health check
 app.get("/", (_req: Request, res: Response) => {
   res.send("Backend is working");
 });
 
 // API Routes
-app.use("/api/qr", qrRoutes); // all QR endpoints will be /api/qr/*
+app.use("/api/qr", qrRoutes);
 
-// 404 handler (important!)
+// 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Route not found" });
 });
 
 const PORT = process.env.PORT || 4000;
 
-// Start server only after Redis connection
+// Start server after Redis connection
 connectRedis()
   .then(() => {
     const server = app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
     });
 
-    // Handle "port in use" error gracefully
+    // WebSocket server (for dynamic QR updates)
+    const wss = new WebSocketServer({ server });
+    console.log(`WebSocket server running on ws://localhost:${PORT}`);
+
+    // Initialize QRCodeService with WebSocket server
+    const qrService = new QRCodeService(wss);
+    initQrService(qrService);
+
+    // Handle "port in use" error
     server.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
         console.error(`Port ${PORT} is already in use. Please stop the other process.`);
@@ -50,7 +61,7 @@ connectRedis()
     });
   })
   .catch((err: Error) => {
-    console.error(" Redis connection failed:", err.message);
+    console.error("Redis connection failed:", err.message);
   });
 
 // Global error handler
@@ -62,4 +73,13 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (reason: unknown) => {
   console.error("Unhandled Rejection:", reason);
+});
+
+/* -------------------------------
+   Additional Optional Enhancements
+--------------------------------- */
+// You could add ping/pong for WebSocket keep-alive or log connections:
+process.on("SIGINT", () => {
+  console.log("Server shutting down...");
+  process.exit(0);
 });
