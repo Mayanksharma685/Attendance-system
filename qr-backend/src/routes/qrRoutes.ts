@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import {
   generateQR,   // legacy (Redis-based)
@@ -11,13 +12,13 @@ import {
 const router = Router();
 
 /* -------------------------------
-Legacy Endpoints (keep alive for compatibility)
+   Legacy Endpoints (keep alive for compatibility)
 --------------------------------- */
 router.post("/generateQR", generateQR);   // POST /api/qr/generateQR
 router.post("/verifyQR", verifyQR);       // POST /api/qr/verifyQR
 
 /* -------------------------------
-New Endpoints (token-based QR sessions)
+   New Endpoints (token-based QR sessions)
 --------------------------------- */
 router.post("/start", generateQr);        // POST /api/qr/start  -> teacher starts session
 router.post("/stop", stopQr);             // POST /api/qr/stop   -> teacher stops session
