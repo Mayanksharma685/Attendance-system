@@ -1,7 +1,7 @@
-// src/views/student/Timetable.tsx
-import React, { useState, useEffect } from "react";
+// src/views/student/Timetable.tsximport React, { useState, useEffect } from "react";
 import { studentApi } from "../../api/studentApi";
 import QrScanner from "../../types/QrScanner";
+import jsQR from "jsqr";
 
 interface Subject {
   code: string;
@@ -13,13 +13,12 @@ export default function Timetable() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [activeSession, setActiveSession] = useState<any>(null);
   const [scanning, setScanning] = useState(false);
-  const [lastResult, setLastResult] = useState<any>(null);
   const [message, setMessage] = useState<string>("");
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [scanned, setScanned] = useState(false);
+  const [currentSubject, setCurrentSubject] = useState<string | null>(null);
 
-  // 🔹 Replace with logged-in studentId (later from auth/store)
-  const studentId = "STU123";
+  const studentId = "STU123"; // Replace with logged-in studentId later
 
   // Load student subjects
   useEffect(() => {
@@ -48,31 +47,24 @@ export default function Timetable() {
 
   // Handle QR scan result
   const handleScan = async (result: string | null) => {
-    if (!result || scanned) return;
+    if (!result || scanned || !currentSubject) return;
     setScanned(true);
 
     try {
-      const parsed = JSON.parse(result); // { sessionId, token, subjectCode }
-      setLastResult({ raw: result, parsed });
+      const parsed = JSON.parse(result);
       setMessage("Submitting attendance...");
 
-      const res = await studentApi.verifyAttendance(
-        parsed.sessionId,
-        parsed.token,
-        studentId
-      );
+      await studentApi.verifyAttendance(parsed.sessionId, parsed.token, studentId);
 
-      setAttendance((prev) => ({ ...prev, [parsed.subjectCode]: true }));
-      setMessage(res?.message || "Attendance marked successfully!");
-
-      setTimeout(() => {
-        setScanning(false);
-        setMessage("");
-      }, 1500);
+      // ✅ Persist attendance for this subject
+      setAttendance((prev) => ({ ...prev, [currentSubject]: true }));
+      setScanning(false); // close camera
+      setMessage(""); // clear modal message
+      setCurrentSubject(null); // reset current subject
     } catch (err: any) {
       console.error("Attendance submission failed:", err);
-      setMessage(err.response?.data?.error || "Failed to verify QR.");
-      setScanned(false); // allow retry
+      setMessage(err.response?.data?.error || "❌ Failed to verify QR.");
+      setScanned(false);
     }
   };
 
@@ -82,6 +74,7 @@ export default function Timetable() {
 
       <div className="grid gap-4">
         {subjects.map((subject) => {
+          const hasMarkedAttendance = attendance[subject.code];
           const isActive = activeSession?.subjectCode === subject.code;
 
           return (
@@ -94,13 +87,13 @@ export default function Timetable() {
                 <p className="text-sm text-gray-600">{subject.description}</p>
               </div>
 
-              {attendance[subject.code] ? (
-                <span className="text-green-600 font-medium">
-                  Attendance Recorded
-                </span>
+              {/* Show attendance status or button */}
+              {hasMarkedAttendance ? (
+                <span className="text-green-600 font-medium">Attendance Recorded</span>
               ) : isActive ? (
                 <button
                   onClick={() => {
+                    setCurrentSubject(subject.code);
                     setScanning(true);
                     setScanned(false);
                     setMessage("");
@@ -118,14 +111,13 @@ export default function Timetable() {
       </div>
 
       {/* QR Scanner Modal */}
-      {scanning && (
+      {scanning && currentSubject && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-11/12 sm:w-2/3 md:w-1/2 flex flex-col items-center">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
-              📷 Scan QR Code for {activeSession?.subjectCode}
+              📷 Scan QR Code for {currentSubject}
             </h2>
 
-            {/* Live QR Scanner (handles decoding itself) */}
             <div className="w-[80%] aspect-square border-4 border-blue-600 rounded-xl overflow-hidden flex items-center justify-center">
               <QrScanner
                 onDecode={(result) => handleScan(result)}
@@ -133,7 +125,6 @@ export default function Timetable() {
               />
             </div>
 
-            {/* Status message */}
             {message && (
               <p
                 className={`mt-3 font-semibold text-center ${
@@ -148,10 +139,12 @@ export default function Timetable() {
               </p>
             )}
 
-            {/* Cancel button */}
             <div className="mt-6">
               <button
-                onClick={() => setScanning(false)}
+                onClick={() => {
+                  setScanning(false);
+                  setCurrentSubject(null);
+                }}
                 className="px-5 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700"
               >
                 Cancel
@@ -163,3 +156,4 @@ export default function Timetable() {
     </div>
   );
 }
+
