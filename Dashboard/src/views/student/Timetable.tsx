@@ -56,7 +56,7 @@ export default function Timetable() {
 
       await studentApi.verifyAttendance(parsed.sessionId, parsed.token, studentId);
 
-      // ✅ Persist attendance for this subject
+      //  Persist attendance for this subject
       setAttendance((prev) => ({ ...prev, [currentSubject]: true }));
       setScanning(false); // close camera
       setMessage(""); // clear modal message
