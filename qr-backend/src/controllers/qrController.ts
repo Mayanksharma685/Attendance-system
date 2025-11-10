@@ -1,20 +1,26 @@
 import type { Request, Response } from "express";
 import { QRCodeService } from "../services/QRCodeService";
-import * as qrServiceLegacy from "../services/QRCodeService"; // keep legacy exports
-import WebSocket from "ws";
+import * as qrServiceLegacy from "../services/QRCodeService"; 
+import WebSocket, { WebSocketServer } from "ws";
 
-// New class instance (WebSocket server passed)
+
+// WebSocket server instance required for new QR rotation
 const wsServer = new WebSocket.Server({ noServer: true });
+
+// Create class instance with WebSocket
 const qrService = new QRCodeService(wsServer);
 
+/* -------------------------------
+    Legacy Controllers (WORK WITH ROTATION)
+--------------------------------- */
 
 /**
- * Generate QR (legacy Redis-based)
- * Returns sessionId + token + qrImage
+ *  Generate QR (works with rotating token now)
+ * Returns: sessionId, token, qrImage
  */
 export async function generateQR(_req: Request, res: Response): Promise<void> {
   try {
-    const { sessionId, token, qrImage } = await qrServiceLegacy.generateQRCode(); // legacy function
+    const { sessionId, token, qrImage } = await qrServiceLegacy.generateQRCode();
     res.json({ sessionId, token, qrImage });
   } catch (err) {
     console.error("Error in generateQR:", err);
@@ -23,8 +29,7 @@ export async function generateQR(_req: Request, res: Response): Promise<void> {
 }
 
 /**
- * Verify QR (legacy Redis-based)
- * Both sessionId + token must match
+ *  Verify QR (must match sessionId + token + must be newer than 5 seconds)
  */
 export async function verifyQR(req: Request, res: Response): Promise<void> {
   try {
@@ -34,7 +39,8 @@ export async function verifyQR(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const result = await qrServiceLegacy.verifyQRCode(sessionId, token); // legacy verifies both
+    const result = await qrServiceLegacy.verifyQRCode(sessionId, token);
+
     if (!result.success) {
       res.status(400).json(result);
       return;
@@ -47,18 +53,23 @@ export async function verifyQR(req: Request, res: Response): Promise<void> {
   }
 }
 
+/* -------------------------------
+   New Class-Based Controllers (NO PARAM CHANGES)
+--------------------------------- */
 
-//  Start QR session (teacher side)
-
+/**
+ *  Start rotating class QR session
+ * Requires: classId
+ */
 export const generateQr = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { subjectCode } = req.body;
-    if (!subjectCode) {
-      res.status(400).json({ error: "subjectCode required" });
+    const { classId } = req.body; //Chqnged to classId
+    if (!classId) {
+      res.status(400).json({ error: "classId required" });
       return;
     }
 
-    const session = await qrService.startSession(subjectCode);
+    const session = await qrService.startSession(Number(classId)); //Ensured classId is number
     res.json(session);
   } catch (err) {
     console.error("Error in generateQr:", err);
@@ -66,9 +77,9 @@ export const generateQr = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-
-// Stop QR session manually
-
+/**
+ *  Stop active QR session
+ */
 export const stopQr = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sessionId } = req.body;
@@ -76,6 +87,7 @@ export const stopQr = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ error: "sessionId required" });
       return;
     }
+
     await qrService.stopSession(sessionId);
     res.json({ success: true });
   } catch (err) {
@@ -84,8 +96,9 @@ export const stopQr = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-
-// Get active QR session (teacher side)
+/**
+ * Get currently active session
+ */
 export const getActiveSession = async (_: Request, res: Response): Promise<void> => {
   try {
     const session = qrService.getActiveSession();
@@ -97,12 +110,13 @@ export const getActiveSession = async (_: Request, res: Response): Promise<void>
 };
 
 /**
- * Verify student QR scan (class-based)
- * Both sessionId + token must match simultaneously
+ *  Verify rotating QR scan for students
+ * Requires: sessionId, token, studentId
  */
 export const verifyQr = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sessionId, token, studentId } = req.body;
+
     if (!sessionId || !token || !studentId) {
       res.status(400).json({ error: "sessionId, token, and studentId required" });
       return;
@@ -116,9 +130,10 @@ export const verifyQr = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-//  Export QR service instance for server setup
+/**
+ * Export QR service instance
+ */
 export let qrServiceInstance: QRCodeService;
-
 export const initQrService = (service: QRCodeService) => {
   qrServiceInstance = service;
 };
