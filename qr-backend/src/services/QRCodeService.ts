@@ -232,4 +232,5 @@ export class QRCodeService {
     return await QRCode.toDataURL(JSON.stringify(payload));
   }
 }
+
 export default QRCodeService;
