@@ -20,6 +20,11 @@ app.use(
   })
 );
 
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 // Health check
 app.get("/", (_req: Request, res: Response) => {
   res.send("Backend is working");
@@ -73,9 +78,4 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (reason: unknown) => {
   console.error("Unhandled Rejection:", reason);
-});
-// You could add ping/pong for WebSocket keep-alive or log connections:
-process.on("SIGINT", () => {
-  console.log("Server shutting down...");
-  process.exit(0);
 });
